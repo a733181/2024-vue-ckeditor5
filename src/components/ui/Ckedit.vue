@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref } from 'vue';
 import { component as CKEditor } from '@ckeditor/ckeditor5-vue';
 import 'ckeditor5/ckeditor5.css';
 import {
@@ -32,6 +32,7 @@ import {
   AutoImage,
   AutoLink,
   Autosave,
+  Base64UploadAdapter,
   BlockQuote,
   Bold,
   CloudServices,
@@ -47,10 +48,15 @@ import {
   Highlight,
   HorizontalLine,
   ImageBlock,
+  ImageCaption,
   ImageInline,
+  ImageInsert,
   ImageInsertViaUrl,
   ImageResize,
+  ImageStyle,
+  ImageTextAlternative,
   ImageToolbar,
+  ImageUpload,
   Indent,
   IndentBlock,
   Italic,
@@ -80,6 +86,7 @@ import {
   TodoList,
   Underline,
   Undo,
+  UpcastWriter,
 } from 'ckeditor5';
 import translations from 'ckeditor5/translations/zh.js';
 // 簡體中文
@@ -90,11 +97,24 @@ const editorElement = ref(null);
 const isLayoutReady = ref(false);
 const config = ref(null);
 const editor = ref(DecoupledEditor);
+
 const value = ref('');
 
 function onReadyHandler(editor) {
   Array.from(editorToolbarElement.value.children).forEach((child) => child.remove());
   editorToolbarElement.value.appendChild(editor.ui.view.toolbar.element);
+  stopPasteImgHandler(editor);
+}
+
+function stopPasteImgHandler(editor) {
+  const writer = new UpcastWriter(editor.editing.view.document);
+  editor.plugins.get('ClipboardPipeline').on('inputTransformation', (evt, data) => {
+    for (const element of data.content.getChildren()) {
+      if (element.name === 'img' || element.name === 'figure') {
+        evt.stop();
+      }
+    }
+  });
 }
 
 onMounted(() => {
@@ -122,6 +142,7 @@ onMounted(() => {
         'superscript',
         'code',
         'removeFormat',
+        'ImageUpload',
         '|',
         'specialCharacters',
         'horizontalLine',
@@ -165,9 +186,13 @@ onMounted(() => {
       ImageBlock,
       ImageInline,
       ImageInsertViaUrl,
+      ImageInsert,
       ImageResize,
       ImageToolbar,
-      // ImageUpload,
+      ImageUpload,
+      ImageCaption,
+      ImageStyle,
+      ImageTextAlternative,
       Indent,
       IndentBlock,
       Italic,
@@ -197,6 +222,7 @@ onMounted(() => {
       TodoList,
       Underline,
       Undo,
+      Base64UploadAdapter,
     ],
     fontFamily: {
       supportAllValues: true,
@@ -251,7 +277,16 @@ onMounted(() => {
       ],
     },
     image: {
-      toolbar: ['imageTextAlternative', '|', 'resizeImage'],
+      toolbar: [
+        'toggleImageCaption',
+        'imageTextAlternative',
+        '|',
+        'imageStyle:inline',
+        'imageStyle:wrapText',
+        'imageStyle:breakText',
+        '|',
+        'resizeImage',
+      ],
     },
     link: {
       addTargetToExternalLinks: true,
