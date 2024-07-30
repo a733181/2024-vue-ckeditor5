@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { component as CKEditor } from '@ckeditor/ckeditor5-vue';
 import 'ckeditor5/ckeditor5.css';
 import {
